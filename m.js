@@ -164,7 +164,7 @@ csv
     logger.write(sql);
 
     var text = data[9];
-    var regex = /(?:with|\s*\w*\s*;)\s(.*?):/g
+    var regex = /(?:\s*\w*\s*;)\s(.*?):/g
     var manfs = text.match(regex);
     product_filter = [];
     while (m = regex.exec(text)) {
