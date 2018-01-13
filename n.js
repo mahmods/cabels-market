@@ -9,7 +9,6 @@ if(typeof(String.prototype.trim) === "undefined")
 var request = require('request');
 var Promise = require('bluebird');
 var c = 0;
-var total = 2008;
 var path = require('path');
 const scrapeIt = require("scrape-it")
 const fs = require('fs');
@@ -19,9 +18,14 @@ var jsonProducts = [];
 var urls = fs.readFileSync('handle.txt', 'utf8').split(';');
 var models = json.map(x => x.model);
 var logger = fs.createWriteStream('desc.txt', {
-    flags: 'a' // 'a' means appending (old data will be preserved)
-  })
-// Scrape Emma's profile
+    flags: 'a'
+})
+urls = urls.filter(function(item, pos) {
+    return urls.indexOf(item) == pos;
+})
+var total = urls.length;
+//urls = urls.splice(680, urls.length);
+  console.log(urls.length)
 Promise.each(urls, url => new Promise((resolve, reject) => {
     scrapeIt({
         url: url,
@@ -34,25 +38,88 @@ Promise.each(urls, url => new Promise((resolve, reject) => {
                 manuf: "th",
                 models: "td"
             }
-        }
+        },
+        compatibility: {
+            listItem: "#compatibility tr",
+            data: {
+                manuf: "th",
+                models: "td"
+            }
+        },
+        specs: {
+            listItem: "#specs tr",
+            data: {
+                manuf: "th",
+                models: "td"
+            }
+        },
     }).then( data=> {
         var p = json[models.indexOf(data.model.trim())];
         if (p) {
             var id = p.id;
             if (id) {
                 var desc = "";
-                desc += `<table class="table table-bordered table-specs">`;
-                desc += `<tbody>`;
-                data.oem.forEach(element => {
-                    desc += `<tr>`;
-                    desc += `<td>${element.manuf}</td>`;
-                    desc += `<td>${element.models}</td>`;
-                    desc += `</tr>`;
-                });
-                desc += `</tbody>`;
-                desc += `</table>`;
+                if(data.oem.length > 0) {
+                    desc += `<h3 class="area-title">OEM Part Number Cross References:</h3>`;
+                    desc += `<table class="table table-bordered table-specs">`;
+                    desc += `<tbody>`;
+                    data.oem.forEach(element => {
+                        if (data.oem.indexOf(element) == 0) {
+                            desc += `<tr>`;
+                            desc += `<th>Manufacturer</th>`;
+                            desc += `<th>OEM Part #</th>`;
+                            desc += `</tr>`;
+                        } else {
+                            desc += `<tr>`;
+                            desc += `<td>${element.manuf}</td>`;
+                            desc += `<td>${element.models}</td>`;
+                            desc += `</tr>`;
+                        }
+                    });
+                    
+                    desc += `</tbody>`;
+                    desc += `</table>`;
+                }
+
+                if(data.compatibility.length > 0) {
+                    desc += `<h3 class="area-title">Compatibility:</h3>`;
+                    desc += `<table class="table table-bordered table-specs">`;
+                    desc += `<tbody>`;
+                    data.compatibility.forEach(element => {
+                        if (data.compatibility.indexOf(element) == 0) {
+                            desc += `<tr>`;
+                            desc += `<th>Manufacturer</th>`;
+                            desc += `<th>Model</th>`;
+                            desc += `</tr>`;
+                        } else {
+                            desc += `<tr>`;
+                            desc += `<td>${element.manuf}</td>`;
+                            desc += `<td>${element.models}</td>`;
+                            desc += `</tr>`;
+                        }
+                    });
+                    
+                    desc += `</tbody>`;
+                    desc += `</table>`;
+                }
+
+                if(data.specs.length > 0) {
+                    desc += `<h3 class="area-title">Technical Specifications:</h3>`;
+                    desc += `<table class="table table-bordered table-specs">`;
+                    desc += `<tbody>`;
+                    data.specs.forEach(element => {
+                        desc += `<tr>`;
+                        desc += `<td>${element.manuf}</td>`;
+                        desc += `<td>${element.models}</td>`;
+                        desc += `</tr>`;
+                    });
+                    
+                    desc += `</tbody>`;
+                    desc += `</table>`;
+                }
                 
-                logger.write("UPDATE `oc_product_description` SET `description`='"+desc+"' WHERE `product_id` = '"+id+"'");
+                
+                logger.write("UPDATE `oc_product_description` SET `description`='"+desc+"' WHERE `product_id` = '"+id+"';");
                 jsonProducts.push({id: id, desc: data.oem});
                 c++;
                 console.log(c + ' of ' + total)

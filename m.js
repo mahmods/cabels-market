@@ -164,7 +164,7 @@ csv
     logger.write(sql);
 
     var text = data[9];
-    var regex = /(?:\s*\w*\s*;)\s(.*?):/g
+    var regex = /(?:b'|\s*\w*\s*;)\s*(.*?):/g
     var manfs = text.match(regex);
     product_filter = [];
     while (m = regex.exec(text)) {
@@ -175,7 +175,7 @@ csv
             filters.push(m[1]);
         }
         logger.write('INSERT INTO `oc_product_filter` (`product_id`, `filter_id`) VALUES ("'+x+'", "'+(filters.indexOf(m[1])+1)+'");');
-        var regex2 = new RegExp(m[1] + ": (.*?);");
+        var regex2 = new RegExp(m[1] + ": (.*?)(;|\.')");
         
         n = regex2.exec(text)
         if(n) {
@@ -194,7 +194,7 @@ csv
                     if(!filters.includes(element) && !product_filter.includes(element)) {
                     filters.push(element);
                     product_filter.push(element);
-                    logger.write('INSERT INTO `oc_filter`(`filter_id`, `filter_group_id`, `sort_order`) VALUES (NULL,"2","0");');
+                    logger.write('INSERT INTO `oc_filter`(`filter_id`, `filter_group_id`, `parent_id`, `sort_order`) VALUES (NULL,"2", "' + filters.indexOf(m[1]) + '", "0");');
                     logger.write('INSERT INTO `oc_filter_description`(`filter_id`, `language_id`, `filter_group_id`, `name`) VALUES ("'+(filters.indexOf(element)+1)+'","1","2","'+element+'");');
                     logger.write('INSERT INTO `oc_filter_description`(`filter_id`, `language_id`, `filter_group_id`, `name`) VALUES ("'+(filters.indexOf(element)+1)+'","2","2","'+element+'");');
                     logger.write('INSERT INTO `oc_product_filter` (`product_id`, `filter_id`) VALUES ("'+x+'", "'+(filters.indexOf(element)+1)+'");');
