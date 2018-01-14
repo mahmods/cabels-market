@@ -7,12 +7,12 @@ if(typeof(String.prototype.trim) === "undefined")
     };
 }
 var request = require('request');
+var csv = require("fast-csv");
 var Promise = require('bluebird');
-var c = 0;
 var path = require('path');
 const scrapeIt = require("scrape-it")
 const fs = require('fs');
-const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.47 Safari/537.36'
+const USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'
 var json = JSON.parse(fs.readFileSync('test.txt', 'utf8'));
 var jsonProducts = [];
 var urls = fs.readFileSync('handle.txt', 'utf8').split(';');
@@ -20,44 +20,54 @@ var models = json.map(x => x.model);
 var logger = fs.createWriteStream('desc.txt', {
     flags: 'a'
 })
-urls = urls.filter(function(item, pos) {
+/* urls = urls.filter(function(item, pos) {
     return urls.indexOf(item) == pos;
-})
-var total = urls.length;
+}) */
+urls = [];
 //urls = urls.splice(680, urls.length);
-  console.log(urls.length)
-Promise.each(urls, url => new Promise((resolve, reject) => {
-    scrapeIt({
-        url: url,
-        headers: { "User-agent": USER_AGENT }
-    }, {
-        model: ".variant-sku",
-        oem: {
-            listItem: "#oems- .table-specs tr",
-            data: {
-                manuf: "th",
-                models: "td"
-            }
-        },
-        compatibility: {
-            listItem: "#compatibility tr",
-            data: {
-                manuf: "th",
-                models: "td"
-            }
-        },
-        specs: {
-            listItem: "#specs tr",
-            data: {
-                manuf: "th",
-                models: "td"
-            }
-        },
-    }).then( data=> {
-        var p = json[models.indexOf(data.model.trim())];
-        if (p) {
-            var id = p.id;
-            if (id) {
+console.log(urls.length);
+var x = 1500;
+csv
+.fromPath("products.csv")
+.on("data", function(data){
+    if(data[0]) {
+        urls.push(data[7]);
+    }
+})
+.on("end", function(){
+    var total = urls.length;
+    urls = urls.splice(x - 1, urls.length);
+    console.log('Total products: ' + total)
+    Promise.each(urls, url => new Promise((resolve, reject) => {
+            console.log(url);
+            scrapeIt({
+                url: url,
+                headers: { "User-agent": USER_AGENT }
+            }, {
+                model: ".variant-sku",
+                oem: {
+                    listItem: "#oems- .table-specs tr",
+                    data: {
+                        manuf: "th",
+                        models: "td"
+                    }
+                },
+                compatibility: {
+                    listItem: "#compatibility tr",
+                    data: {
+                        manuf: "th",
+                        models: "td"
+                    }
+                },
+                specs: {
+                    listItem: "#specs tr",
+                    data: {
+                        manuf: "th",
+                        models: "td"
+                    }
+                },
+            }).then( data=> {
+                var id = x;
                 var desc = "";
                 if(data.oem.length > 0) {
                     desc += `<h3 class="area-title">OEM Part Number Cross References:</h3>`;
@@ -80,7 +90,7 @@ Promise.each(urls, url => new Promise((resolve, reject) => {
                     desc += `</tbody>`;
                     desc += `</table>`;
                 }
-
+    
                 if(data.compatibility.length > 0) {
                     desc += `<h3 class="area-title">Compatibility:</h3>`;
                     desc += `<table class="table table-bordered table-specs">`;
@@ -102,7 +112,7 @@ Promise.each(urls, url => new Promise((resolve, reject) => {
                     desc += `</tbody>`;
                     desc += `</table>`;
                 }
-
+    
                 if(data.specs.length > 0) {
                     desc += `<h3 class="area-title">Technical Specifications:</h3>`;
                     desc += `<table class="table table-bordered table-specs">`;
@@ -118,23 +128,27 @@ Promise.each(urls, url => new Promise((resolve, reject) => {
                     desc += `</table>`;
                 }
                 
-                
-                logger.write("UPDATE `oc_product_description` SET `description`='"+desc+"' WHERE `product_id` = '"+id+"';");
+                desc = desc.replace(`'`, `"`);
+                logger.write("UPDATE `oc_product_description` SET `description`='" + desc + "' WHERE `product_id` = '" + id + "';\n");
                 jsonProducts.push({id: id, desc: data.oem});
-                c++;
-                console.log(c + ' of ' + total)
+                console.log(x + ' of ' + total)
+                x++;
                 resolve();
+            }).catch(errr => {
+                console.log(errr);
+                x++;
+                resolve();
+            }) 
+    })).then(() => {
+        console.log('All Products Downloaded!');
+        var fs = require('fs');
+        fs.writeFile("descJSON.txt", JSON.stringify(jsonProducts), function(err) {
+            if(err) {
+                return console.log(err);
             }
-        }
-    }).catch(console.error) 
-})).then(() => {
-    console.log('All Image Downloaded!');
-    var fs = require('fs');
-    fs.writeFile("descJSON.txt", JSON.stringify(jsonProducts), function(err) {
-        if(err) {
-            return console.log(err);
-        }
+        });
+    }).catch(err => {
+        console.error('Failed: ' + err.message);
     });
-}).catch(err => {
-    console.error('Failed: ' + err.message);
 });
+

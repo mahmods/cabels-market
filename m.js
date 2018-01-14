@@ -194,7 +194,7 @@ csv
                     if(!filters.includes(element) && !product_filter.includes(element)) {
                     filters.push(element);
                     product_filter.push(element);
-                    logger.write('INSERT INTO `oc_filter`(`filter_id`, `filter_group_id`, `parent_id`, `sort_order`) VALUES (NULL,"2", "' + filters.indexOf(m[1]) + '", "0");');
+                    logger.write('INSERT INTO `oc_filter`(`filter_id`, `filter_group_id`, `parent_id`, `sort_order`) VALUES (NULL,"2", "' + (filters.indexOf(m[1])+1) + '", "0");');
                     logger.write('INSERT INTO `oc_filter_description`(`filter_id`, `language_id`, `filter_group_id`, `name`) VALUES ("'+(filters.indexOf(element)+1)+'","1","2","'+element+'");');
                     logger.write('INSERT INTO `oc_filter_description`(`filter_id`, `language_id`, `filter_group_id`, `name`) VALUES ("'+(filters.indexOf(element)+1)+'","2","2","'+element+'");');
                     logger.write('INSERT INTO `oc_product_filter` (`product_id`, `filter_id`) VALUES ("'+x+'", "'+(filters.indexOf(element)+1)+'");');
@@ -202,7 +202,6 @@ csv
             });
         }
     }
-    //console.log(data[10])
     if (data[10] != '{}') {
         data[10] = data[10].replace('{','').replace('}','').replace(/\'/g,'').split(',');
         data[10].forEach(element => {
@@ -234,6 +233,41 @@ csv
         {id:'92',category:'Temperature'},
         {id:'95',category:'Fetal'},
         {id:'99',category:'O2'},
+
+        {id:'69', category:'Direct-Connect SpO2 Sensors'},
+        {id:'70', category:'Short SpO2 Sensors'},
+        {id:'71', category:'SpO2 Adapter Cables'},
+        {id:'72', category:'Disposable SpO2 Sensors'},
+        {id:'73', category:'SpO2 Accessories'},
+        {id:'98', category:'Disposable ECG Leadwires'},
+        {id:'75', category:'Direct-Connect ECG Cables'},
+        {id:'76', category:'ECG Leadwires'},
+        {id:'77', category:'ECG Telemetry Leadwires'},
+        {id:'78', category:'ECG Trunk Cables'},
+        {id:'79', category:'Disposable Direct-Connect ECG Cables'},
+        {id:'81', category:'Direct-Connect EKG Cables'},
+        {id:'97', category:'EKG Trunk Cables'},
+        {id:'82', category:'EKG Leadwires'},
+        {id:'83', category:'EKG Accessories'},
+        {id:'85', category:'NIBP Cuffs'},
+        {id:'86', category:'NIBP Hoses'},
+        {id:'87', category:'NIBP Connectors'},
+        {id:'89', category:'IBP Adapter Cables'},
+        {id:'90', category:'IBP Disposable Transducers'},
+        {id:'91', category:'IBP Infusion Bags'},
+        {id:'93', category:'Reusable Temperature Probes'},
+        {id:'94', category:'Disposable Temperature Probes'},
+        {id:'96', category:'Ultrasound Transducers'},
+        {id:'100', category:'Oxygen Sensors'},
+        {id:'101', category:'Flow Sensors'},
+        {id:'102', category:'EtCO2 Sensors'},
+        {id:'103', category:'ECG Accessories'},
+        {id:'104', category:'Toco Transducers'},
+        {id:'105', category:'Transducer Repair Cables'},
+        {id:'106', category:'Transducer Repair Cases'},
+        {id:'107', category:'Temperature Adapters'},
+        {id:'108', category:'Temperature Accessories'},
+        {id:'109', category:'Fetal Accessories'},
     ]
     cats.forEach(cat => {
         filters.forEach(filter => {
