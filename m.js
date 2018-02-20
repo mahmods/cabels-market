@@ -103,6 +103,25 @@ Object.prototype.getKeyByValue = function( value ) {
         }
     }
 }
+function decodeHTMLEntities(text) {
+    var entities = [
+        ['amp', '&'],
+        ['apos', '\''],
+        ['#x27', '\''],
+        ['#x2F', '/'],
+        ['#39', '\''],
+        ['#47', '/'],
+        ['lt', '<'],
+        ['gt', '>'],
+        ['nbsp', ' '],
+        ['quot', '"']
+    ];
+
+    for (var i = 0, max = entities.length; i < max; ++i) 
+        text = text.replace(new RegExp('&'+entities[i][0]+';', 'g'), entities[i][1]);
+
+    return text;
+}
 var logger = fs.createWriteStream('log.txt', {
     flags: 'a' // 'a' means appending (old data will be preserved)
   })
@@ -129,6 +148,8 @@ logger.write('INSERT INTO `oc_filter_group`(`filter_group_id`, `sort_order`) VAL
 logger.write('INSERT INTO `oc_filter_group_description`(`filter_group_id`, `language_id`, `name`) VALUES ("2","1","Models");')
 logger.write('INSERT INTO `oc_filter_group_description`(`filter_group_id`, `language_id`, `name`) VALUES ("2","2","Models");')
 var filters = [];
+var filters_manf = [];
+var filters_models = [];
 var products = [];
 var jsonProducts = [];
 csv
@@ -163,7 +184,7 @@ csv
     sql = 'INSERT INTO `oc_product_to_store`(`product_id`, `store_id`) VALUES ("'+x+'","0");';
     logger.write(sql);
 
-    var text = data[9];
+    var text = decodeHTMLEntities(data[9]);
     var regex = /(?:b'|\s*\w*\s*;)\s*(.*?):/g
     var manfs = text.match(regex);
     product_filter = [];
@@ -173,6 +194,7 @@ csv
             logger.write('INSERT INTO `oc_filter_description`(`filter_id`, `language_id`, `filter_group_id`, `name`) VALUES ("'+(filters.length+1)+'","1","1","'+m[1]+'");');
             logger.write('INSERT INTO `oc_filter_description`(`filter_id`, `language_id`, `filter_group_id`, `name`) VALUES ("'+(filters.length+1)+'","2","1","'+m[1]+'");');
             filters.push(m[1]);
+            filters_manf.push(m[1]);
         }
         logger.write('INSERT INTO `oc_product_filter` (`product_id`, `filter_id`) VALUES ("'+x+'", "'+(filters.indexOf(m[1])+1)+'");');
         var regex2 = new RegExp(m[1] + ": (.*?)(;|\.')");
@@ -193,6 +215,7 @@ csv
                 } else {
                     if(!filters.includes(element) && !product_filter.includes(element)) {
                     filters.push(element);
+                    filters_models.push(element);
                     product_filter.push(element);
                     logger.write('INSERT INTO `oc_filter`(`filter_id`, `filter_group_id`, `parent_id`, `sort_order`) VALUES (NULL,"2", "' + (filters.indexOf(m[1])+1) + '", "0");');
                     logger.write('INSERT INTO `oc_filter_description`(`filter_id`, `language_id`, `filter_group_id`, `name`) VALUES ("'+(filters.indexOf(element)+1)+'","1","2","'+element+'");');
@@ -208,10 +231,7 @@ csv
                 logger.write('INSERT INTO `oc_product_image`(`product_image_id`, `product_id`, `image`, `sort_order`) VALUES (NULL,"'+x+'","'+('catalog/products/images/'+data[0].replace(/[\/\\|&;$%@"<>()+,]/g, "-")+'_'+(data[10].indexOf(element)+1)+'.jpg')+'","0");');
         });
     }
-    products.push({name:data[3],variant:data[4]});
-    if(x == 1) {
-        console.log(product_filter)
-    }
+    products.push({name:data[12],variant:data[4]});
     x++;
 }
 })
@@ -271,7 +291,7 @@ csv
     ]
     cats.forEach(cat => {
         filters.forEach(filter => {
-            logger.write('INSERT INTO `oc_category_filter`(`category_id`, `filter_id`) VALUES ("'+cat.id+'","'+(filters.indexOf(filter)+1)+'");');
+            //ogger.write('INSERT INTO `oc_category_filter`(`category_id`, `filter_id`) VALUES ("'+cat.id+'","'+(filters.indexOf(filter)+1)+'");');
         });
     });
     

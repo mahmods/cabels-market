@@ -20,13 +20,9 @@ var models = json.map(x => x.model);
 var logger = fs.createWriteStream('desc.txt', {
     flags: 'a'
 })
-/* urls = urls.filter(function(item, pos) {
-    return urls.indexOf(item) == pos;
-}) */
-urls = [];
-//urls = urls.splice(680, urls.length);
-console.log(urls.length);
-var x = 1500;
+var urls = [];
+var urls_2 = [];
+//var x = 1;
 csv
 .fromPath("products.csv")
 .on("data", function(data){
@@ -35,11 +31,14 @@ csv
     }
 })
 .on("end", function(){
+    urls_2 = urls.slice(0);
     var total = urls.length;
-    urls = urls.splice(x - 1, urls.length);
+    var uncompleted = total;
+    var running = false;
     console.log('Total products: ' + total)
-    Promise.each(urls, url => new Promise((resolve, reject) => {
-            console.log(url);
+    while (uncompleted != 0 && running == false) {
+        running = true;
+        Promise.each(urls, url => new Promise((resolve, reject) => {
             scrapeIt({
                 url: url,
                 headers: { "User-agent": USER_AGENT }
@@ -66,8 +65,8 @@ csv
                         models: "td"
                     }
                 },
-            }).then( data=> {
-                var id = x;
+            }).then(data=> {
+                var id = urls_2.indexOf(url) + 1;
                 var desc = "";
                 if(data.oem.length > 0) {
                     desc += `<h3 class="area-title">OEM Part Number Cross References:</h3>`;
@@ -131,24 +130,26 @@ csv
                 desc = desc.replace(`'`, `"`);
                 logger.write("UPDATE `oc_product_description` SET `description`='" + desc + "' WHERE `product_id` = '" + id + "';\n");
                 jsonProducts.push({id: id, desc: data.oem});
-                console.log(x + ' of ' + total)
-                x++;
+                uncompleted--;
+                urls.splice(urls.indexOf(url), 1);
+                console.log((total - uncompleted) + ' of ' + total)
                 resolve();
             }).catch(errr => {
-                console.log(errr);
-                x++;
+                console.log("Failed");
                 resolve();
-            }) 
-    })).then(() => {
-        console.log('All Products Downloaded!');
-        var fs = require('fs');
-        fs.writeFile("descJSON.txt", JSON.stringify(jsonProducts), function(err) {
-            if(err) {
-                return console.log(err);
-            }
-        });
-    }).catch(err => {
-        console.error('Failed: ' + err.message);
-    });
+            });
+        })).then(() => {
+            console.log('All Products Downloaded!');
+            var fs = require('fs');
+            fs.writeFile("descJSON.txt", JSON.stringify(jsonProducts), function(err) {
+                if(err) {
+                    return console.log(err);
+                }
+            });
+            running = false;
+        }).catch(err => {
+            console.error('Failed: ' + err);
+        });   
+    }
 });
 

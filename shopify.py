@@ -121,10 +121,10 @@ def extract_products_collection(url, col):
                     stock = 'No'
 
                 row = {'sku': sku, 'product_type': product_type,
-                       'title': title, 'option_value': option_value,
+                       'title': title, 'option_value': option_value, 'handle': product_handle,
                        'price': price, 'stock': stock, 'body': str(product['body_html']),
-                       'variant_id': product_handle + str(variant['id']),
-                       'product_url': product_url, 'image_src': image_src, 'images': images}
+                       'variant_id': product_url + "?variant=" + str(variant['id']),
+                       'product_url': product_url + "?variant=" + str(variant['id']), 'image_src': image_src, 'images': images}
                 for k in row:
                     if isinstance(row[k], str):
                         row[k] = str(row[k].strip()) if row[k] else ''
@@ -157,7 +157,8 @@ def extract_products(url, path, collections=None):
                                  product['title'], product['option_value'],
                                  product['price'],
                                  product['stock'], product['product_url'],
-                                 product['image_src'], product['body'].encode('utf-8'), product['images']])
+                                 product['image_src'], product['body'].encode('utf-8'), product['images'],
+                                 product['variant_id'], product['handle']])
 
 
 if __name__ == '__main__':
